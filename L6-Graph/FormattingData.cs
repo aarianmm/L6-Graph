@@ -7,18 +7,26 @@ namespace L6_Graph
 	{
         private string projectPath;
         string submissionsCSV;
-        string[] L6Names;
+        public string SubmissionsCSV { get { return submissionsCSV; } }
+        string[] l6Names;
+        public string[] L6Names { get { return l6Names; } }
         string[] submissionsNames;
         string[] unsubmittedNames;
+        HashSet<string> fixedNames;
         Stack<string> wrongNames;
         public FormattingData(string projectPath)
 		{
             this.projectPath = projectPath;
-            L6Names = populateL6Names();
+            l6Names = populateL6Names();
             submissionsCSV = populateSubmissionsCSV();
             submissionsNames = populateSubmissionNames();
-            unsubmittedNames = populateUnsubmittedNames();
+            //unsubmittedNames = populateUnsubmittedNames();
+            //wrongNames = populateWrongNames();
+            //Console.WriteLine(wrongNames.Count());
+            fixedNames = populateFixedNames();
+            applyFixedNames();
             wrongNames = populateWrongNames();
+            //Console.WriteLine(submissionsCSV);
         }
         private string[] populateL6Names()
         {
@@ -34,7 +42,10 @@ namespace L6_Graph
             SubmissionsReader.Close();
             Regex SpacesAfterName = new Regex(@" ,");
             csv = SpacesAfterName.Replace(csv, ",");
+            //Regex SpacesAtEnd = new Regex(@" (\n|\r)");
+            //csv = SpacesAtEnd.Replace(csv, "\n");
             csv = capitaliseCSV(csv);
+            csv = csv.Replace('\r', '\n');
             return csv;
         }
         private string capitaliseCSV(string csv)
@@ -52,19 +63,36 @@ namespace L6_Graph
         {
             Regex completedForm = new Regex(@"([^,]+),.+\n?");
             MatchCollection submissionNameMatches = completedForm.Matches(submissionsCSV);
-
             string[] names = new string[submissionNameMatches.Count];
             for (int i = 0; i < names.Length; i++)
             {
                 names[i] = submissionNameMatches[i].Groups[1].Value;
             }
+            //List<string> namesList = new List<string>();
+            //for (int i = 0; i < submissionNameMatches.Count; i++)
+            //{
+            //    string name = submissionNameMatches[i].Groups[1].Value;
+            //    if (L6Names.Contains(name))
+            //    {
+            //        namesList.Add(name);
+            //    }
+            //    else
+            //    {
+            //        Console.WriteLine("ERROR - "+name); //debug
+            //    }
+            //}
+            //string[] names = new string[namesList.Count];
+            //for (int i = 0; i < namesList.Count; i++)
+            //{
+            //    names[i] = namesList[i];
+            //}
             return names;
         }
         private string[] populateUnsubmittedNames()
         {
-            string[] names = new string[L6Names.Length - submissionsNames.Length];
+            string[] names = new string[l6Names.Length - submissionsNames.Length];
             int index = 0;
-            foreach(string name in L6Names)
+            foreach(string name in l6Names)
             {
                 if (!submissionsNames.Contains(name))
                 {
@@ -81,19 +109,22 @@ namespace L6_Graph
             MatchCollection matches = AllNamesReader.Matches(submissionsCSV);
             foreach(Match match in matches)
             {
-                if (!L6Names.Contains(match.Groups[1].Value))
+                if (!l6Names.Contains(match.Groups[1].Value))
                 {
                     names.Push(match.Groups[1].Value);
                 }
             }
             return names;
         }
-
+        private void displayRatio()
+        {
+            Console.WriteLine(submissionsNames.Length + ":" + unsubmittedNames.Length + "\n" + l6Names.Length);
+        }
         public void displayAllNames()
         {
-            for (int i = 0; i < L6Names.Length; i++)
+            for (int i = 0; i < l6Names.Length; i++)
             {
-                Console.WriteLine(L6Names[i]);
+                Console.WriteLine(l6Names[i]) ;
             }
         }
         public void displaySubmissionNames()
@@ -102,6 +133,7 @@ namespace L6_Graph
             {
                 Console.WriteLine(submissionsNames[i]);
             }
+            Console.WriteLine();
         }
         public void displayUnsubmittedNames()
         {
@@ -109,6 +141,7 @@ namespace L6_Graph
             {
                 Console.WriteLine(unsubmittedNames[i]);
             }
+            displayRatio();
         }
         public void displayWrongNames() //debugging only
         {
@@ -116,6 +149,46 @@ namespace L6_Graph
             for (int i = 0; i < names.Length; i++)
             {
                 Console.WriteLine(names[i]);
+            }
+        }
+        public void fixWrongNames()
+        {
+            string[] names = wrongNames.ToArray();
+            for (int i = 0; i < names.Length; i++)
+            {
+                Console.WriteLine(names[i] + " " + (i+1) + "/" + names.Length);
+                string fix = "";
+                bool accurate = false;
+                while (!accurate)
+                {
+                    fix = Console.ReadLine();
+                    if (l6Names.Contains(fix))
+                    {
+                        accurate = true;
+                        Console.Clear();
+                    }
+                    if (fix == "!")
+                    {
+                        saveFixedNames();
+                        return;
+                    }
+                }
+                submissionsCSV = submissionsCSV.Replace(","+names[i]+",", ","+fix+",");
+                submissionsCSV = submissionsCSV.Replace("," + names[i] + "\n", "," + fix + "\n");
+                fixedNames.Add(names[i] + ":" + fix);
+            }
+            saveFixedNames();
+        }
+        private void applyFixedNames()
+        {
+            foreach (string fixedName in fixedNames)
+            {
+                string[] nameAndFixed = fixedName.Split(":");
+                submissionsCSV = submissionsCSV.Replace("," + nameAndFixed[0] + ",", "," + nameAndFixed[1] + ",");
+                submissionsCSV = submissionsCSV.Replace("," + nameAndFixed[0] + "\n", "," + nameAndFixed[1] + "\n");
+                //Console.WriteLine(nameAndFixed[0]);
+                //Console.WriteLine(nameAndFixed[1]);
+                //Console.WriteLine(submissionsCSV);
             }
         }
         public void saveUnsubmittedNames()
@@ -136,8 +209,32 @@ namespace L6_Graph
             }
             UnsubmittedNamesWriter.Close();
         }
-
-
+        public void saveNewCSV()
+        {
+            StreamWriter CSVWriter = new StreamWriter(projectPath + "/Survey.csv");
+            CSVWriter.Write(submissionsCSV);
+            CSVWriter.Close();
+        }
+        private void saveFixedNames()
+        {
+            StreamWriter FixedNamesWriter = new StreamWriter(projectPath + "/FixedNames.txt",false);
+            foreach(string fixedName in fixedNames)
+            {
+                FixedNamesWriter.WriteLine(fixedName);
+            }
+            FixedNamesWriter.Close();
+        }
+        private HashSet<string> populateFixedNames()
+        {
+            HashSet<string> names = new HashSet<string>();
+            StreamReader FixedNamesReader = new StreamReader(projectPath + "/FixedNames.txt");
+            while (!FixedNamesReader.EndOfStream)
+            {
+                names.Add(FixedNamesReader.ReadLine());
+            }
+            FixedNamesReader.Close();
+            return names;
+        }
     }
 }
 

@@ -2,6 +2,7 @@
 Survey.csv
 UnsubmittedNames.txt
 L6-Names.txt
+FixedNames.txt
 
 # globs
 Makefile.in
