@@ -20,13 +20,11 @@ namespace L6_Graph
             l6Names = populateL6Names();
             submissionsCSV = populateSubmissionsCSV();
             submissionsNames = populateSubmissionNames();
-            //unsubmittedNames = populateUnsubmittedNames();
-            //wrongNames = populateWrongNames();
-            //Console.WriteLine(wrongNames.Count());
+            unsubmittedNames = populateUnsubmittedNames();
+            wrongNames = populateWrongNames();
             fixedNames = populateFixedNames();
             applyFixedNames();
             wrongNames = populateWrongNames();
-            //Console.WriteLine(submissionsCSV);
         }
         private string[] populateL6Names()
         {
@@ -61,31 +59,14 @@ namespace L6_Graph
         }
         private string[] populateSubmissionNames()
         {
-            Regex completedForm = new Regex(@"([^,]+),.+\n?");
+            Regex completedForm = new Regex(@"([^,]+),.+\n*");
             MatchCollection submissionNameMatches = completedForm.Matches(submissionsCSV);
             string[] names = new string[submissionNameMatches.Count];
             for (int i = 0; i < names.Length; i++)
             {
                 names[i] = submissionNameMatches[i].Groups[1].Value;
+                //Console.WriteLine(names[i]);
             }
-            //List<string> namesList = new List<string>();
-            //for (int i = 0; i < submissionNameMatches.Count; i++)
-            //{
-            //    string name = submissionNameMatches[i].Groups[1].Value;
-            //    if (L6Names.Contains(name))
-            //    {
-            //        namesList.Add(name);
-            //    }
-            //    else
-            //    {
-            //        Console.WriteLine("ERROR - "+name); //debug
-            //    }
-            //}
-            //string[] names = new string[namesList.Count];
-            //for (int i = 0; i < namesList.Count; i++)
-            //{
-            //    names[i] = namesList[i];
-            //}
             return names;
         }
         private string[] populateUnsubmittedNames()
@@ -97,6 +78,7 @@ namespace L6_Graph
                 if (!submissionsNames.Contains(name))
                 {
                     names[index] = name;
+                    //Console.WriteLine(index);
                     index++;
                 }
             }
@@ -127,7 +109,7 @@ namespace L6_Graph
                 Console.WriteLine(l6Names[i]) ;
             }
         }
-        public void displaySubmissionNames()
+        public void displaySubmittedNames()
         {
             for (int i = 0; i < submissionsNames.Length; i++)
             {
